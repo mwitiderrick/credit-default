@@ -123,6 +123,7 @@ class CreditRiskTrainingFlow(FlowSpec):
         dtrain = xgb.DMatrix(self.X_train, label=self.y_train)
         dval = xgb.DMatrix(self.X_test, label=self.y_test)
 
+        device = 'cuda' if USE_GPU else 'cpu'   
         # Set XGBoost parameters
         logging.info(f"Training on: {device}")
         params = {
