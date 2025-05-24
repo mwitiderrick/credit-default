@@ -15,6 +15,8 @@ from metaflow import FlowSpec, step, Parameter
 OUTPUT_DIR = "/output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)  
 
+logging.info(xgb.__version__)
+logging.info(xgb.build_info())
 # Check if GPU is available for XGBoost
 try:
     test_data = np.random.rand(10, 2)

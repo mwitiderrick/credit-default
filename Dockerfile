@@ -21,6 +21,7 @@ WORKDIR /app
 
 # Copy everything as root
 COPY . .
+# Create metaflow folder and make it writable
 RUN mkdir -p /app/.metaflow && chmod -R a+rwX /app/.metaflow
 
 # Install Python dependencies
@@ -32,7 +33,6 @@ ENV METAFLOW_DEFAULT_METADATA=local
 ENV METAFLOW_DEFAULT_DATASTORE=local
 ENV METAFLOW_USER=docker-user
 ENV MODEL_DIR=/output
-ENV METAFLOW_HOME=/output/.metaflow
 
 # Declare output volume
 VOLUME ["/output"]

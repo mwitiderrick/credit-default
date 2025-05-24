@@ -21,6 +21,14 @@ First, train the model to generate the model file:
 ```bash
 docker run --rm -v $(pwd)/output:/output credit-risk
 ```
+or run with GPU support:
+
+```bash
+docker run --rm \
+  --gpus all \
+  -v $(pwd)/output:/output \
+  credit-risk
+```
 
 #### Step 2: Run Inference
 After the model is trained and saved, you can run inference:
