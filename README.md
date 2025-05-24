@@ -87,7 +87,6 @@ The pipeline can run in both CPU and GPU modes:
 To check if your system is ready for GPU support:
 ```bash
 nvidia-smi  # Should show GPU information
-docker run --rm --gpus all nvidia/cuda:11.8.0-base nvidia-smi  # Should show GPU in container
 ```
 
 The model will automatically:
