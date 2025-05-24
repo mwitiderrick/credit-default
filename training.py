@@ -80,6 +80,7 @@ class CreditRiskTrainingFlow(FlowSpec):
 
         # Set XGBoost parameters
         device = 'cuda' if USE_GPU else 'cpu'
+        logging.info(f"Training on: {device}")
         params = {
             'objective': 'binary:logistic',
             'eval_metric': ['auc', 'logloss'],

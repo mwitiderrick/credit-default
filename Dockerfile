@@ -1,8 +1,5 @@
 FROM nvidia/cuda:12.9.0-cudnn-runtime-ubuntu24.04
 
-# Create a non-root user
-RUN useradd -ms /bin/bash appuser
-
 # Install system dependencies (as root)
 RUN apt-get update && apt-get install -y \
     python3 \
@@ -16,31 +13,29 @@ RUN apt-get update && apt-get install -y \
 RUN ln -sf /usr/bin/python3 /usr/bin/python && \
     ln -sf /usr/bin/pip3 /usr/bin/pip
 
-# Create output folder and assign ownership
-RUN mkdir -p /output && chown -R appuser:appuser /output
-
-# Switch to non-root user (now that all root-level setup is done)
-USER appuser
+# Create output folder 
+RUN mkdir -p /output 
 
 # Set working directory
 WORKDIR /app
 
-# Copy and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
-
-# Copy all source code
+# Copy everything as root
 COPY . .
+RUN mkdir -p /app/.metaflow && chmod -R a+rwX /app/.metaflow
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV METAFLOW_DEFAULT_METADATA=local
 ENV METAFLOW_DEFAULT_DATASTORE=local
-ENV METAFLOW_USER=appuser
+ENV METAFLOW_USER=docker-user
 ENV MODEL_DIR=/output
+ENV METAFLOW_HOME=/output/.metaflow
 
 # Declare output volume
 VOLUME ["/output"]
 
-# Set the default command for training
+# Default command
 CMD ["python", "training.py", "run"]
