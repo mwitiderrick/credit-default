@@ -19,11 +19,7 @@ docker build -t credit-risk .
 First, train the model to generate the model file:
 
 ```bash
-# For CPU usage (default)
 docker run --rm -v $(pwd)/output:/output credit-risk
-
-# For GPU support (requires nvidia-docker and nvidia-container-toolkit)
-docker run --rm --gpus all -v $(pwd)/output:/output credit-risk
 ```
 
 #### Step 2: Run Inference
@@ -70,18 +66,7 @@ Example prediction output:
 Risk Levels:
 - LOW: probability < 0.3
 - MEDIUM: probability between 0.3 and 0.7
-- HIGH: probability >= 0.7
-
-### 📊 Input Features
-The model expects 23 features in the following order:
-1. LIMIT_BAL: Credit limit
-2. SEX: Gender (1=male, 2=female)
-3. EDUCATION: (1=graduate school, 2=university, 3=high school, 4=others)
-4. MARRIAGE: Marital status (1=married, 2=single, 3=others)
-5. AGE: Age in years
-6-11. PAY_0 to PAY_6: Payment status for past months (-2=no consumption, -1=paid in full, 0=revolving credit, 1-9=payment delay for n months)
-12-17. BILL_AMT1 to BILL_AMT6: Bill amounts for past 6 months
-18-23. PAY_AMT1 to PAY_AMT6: Payment amounts for past 6 months
+- HIGH: probability >= 0.7     
 
 ### 💻 GPU Support
 The pipeline can run in both CPU and GPU modes:

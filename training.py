@@ -1,6 +1,9 @@
 # training.py
 import os
 import json
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -10,19 +13,19 @@ import xgboost as xgb
 from metaflow import FlowSpec, step, Parameter
 
 OUTPUT_DIR = "/output"
-os.makedirs(OUTPUT_DIR, exist_ok=True, mode=0o777)  # Ensure write permissions
+os.makedirs(OUTPUT_DIR, exist_ok=True)  
 
 # Check if GPU is available for XGBoost
 try:
     test_data = np.random.rand(10, 2)
     test_labels = np.random.rand(10)
     test_dmatrix = xgb.DMatrix(test_data, label=test_labels)
-    test_param = {'gpu_id': 0, 'tree_method': 'gpu_hist'}
+    test_param = {'device': 'cuda:0', 'tree_method': 'hist'}
     test_bst = xgb.train(test_param, test_dmatrix, num_boost_round=1)
-    print("🚀 GPU is available for XGBoost")
+    logging.info("🚀 GPU is available for XGBoost")
     USE_GPU = True
 except:
-    print("⚠️ No GPU found or CUDA not available. Falling back to CPU.")
+    logging.warning("⚠️ No GPU found or CUDA not available. Falling back to CPU.")
     USE_GPU = False
 
 class CreditRiskTrainingFlow(FlowSpec):
@@ -76,6 +79,7 @@ class CreditRiskTrainingFlow(FlowSpec):
         dval = xgb.DMatrix(self.X_test, label=self.y_test)
 
         # Set XGBoost parameters
+        device = 'cuda' if USE_GPU else 'cpu'
         params = {
             'objective': 'binary:logistic',
             'eval_metric': ['auc', 'logloss'],
@@ -84,11 +88,12 @@ class CreditRiskTrainingFlow(FlowSpec):
             'learning_rate': 0.1,
             'subsample': 0.8,
             'colsample_bytree': 0.8,
-            'tree_method': 'gpu_hist' if USE_GPU else 'hist'
+            'tree_method': 'hist',
+            'device': device
         }
 
         # Train model with early stopping
-        print("🚀 Training XGBoost model...")
+        logging.info("🚀 Training XGBoost model...")
         self.model = xgb.train(
             params,
             dtrain,
@@ -101,7 +106,7 @@ class CreditRiskTrainingFlow(FlowSpec):
         # Save the model
         model_path = os.path.join(OUTPUT_DIR, 'best_model.json')
         self.model.save_model(model_path)
-        print(f"✅ Model saved to {model_path}")
+        logging.info(f"✅ Model saved to {model_path}")
 
         # Make predictions
         y_proba = self.model.predict(dval)
@@ -115,7 +120,7 @@ class CreditRiskTrainingFlow(FlowSpec):
             'auc': roc_auc_score(self.y_test, y_proba)
         }
         
-        print(f"📊 Metrics: {self.metrics}")
+        logging.info(f"📊 Metrics: {self.metrics}")
         self.next(self.output)
 
     @step
@@ -136,7 +141,7 @@ class CreditRiskTrainingFlow(FlowSpec):
         params = {
             "best_iteration": self.model.best_iteration,
             "scale_pos_weight": self.scale_pos_weight,
-            "tree_method": "gpu_hist" if USE_GPU else "hist",
+            "tree_method": "hist" if USE_GPU else "cpu",
             "roc_auc": round(self.metrics['auc'], 4),
         }
         
@@ -145,12 +150,12 @@ class CreditRiskTrainingFlow(FlowSpec):
         with open(params_path, "w") as f:
             json.dump(params, f, indent=2)
 
-        print(f"✅ Training complete. Metrics written to {output_path}")
+        logging.info(f"✅ Training complete. Metrics written to {output_path}")
         self.next(self.end)
 
     @step
     def end(self):
-        print("✅ Pipeline finished.")
+        logging.info("✅ Pipeline finished.")
 
 if __name__ == "__main__":
     CreditRiskTrainingFlow()
