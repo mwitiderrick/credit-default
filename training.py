@@ -71,18 +71,14 @@ class CreditRiskTrainingFlow(FlowSpec):
         counts = np.bincount(self.y_train.astype(int))
         self.scale_pos_weight = counts[0] / counts[1]  # ratio of negative to positive samples
         
-        self.next(self.train)
+        self.next(self.cross_validate)
 
     @step
-    def train(self):
-        """Train XGBoost model with GPU support if available"""
-        # Convert data to DMatrix format
-        dtrain = xgb.DMatrix(self.X_train, label=self.y_train)
-        dval = xgb.DMatrix(self.X_test, label=self.y_test)
-
-        # Set XGBoost parameters
-        device = 'cuda' if USE_GPU else 'cpu'
-        logging.info(f"Training on: {device}")
+    def cross_validate(self):
+        """Perform 5-fold cross-validation and log metrics."""
+        import xgboost as xgb
+        self.dtrain = xgb.DMatrix(self.X_train, label=self.y_train)
+        self.device = 'cuda' if USE_GPU else 'cpu'
         params = {
             'objective': 'binary:logistic',
             'eval_metric': ['auc', 'logloss'],
@@ -92,16 +88,61 @@ class CreditRiskTrainingFlow(FlowSpec):
             'subsample': 0.8,
             'colsample_bytree': 0.8,
             'tree_method': 'hist',
-            'device': device
+            'device': self.device
+        }
+        import logging
+        logging.info("Starting 5-fold cross-validation with XGBoost...")
+        cv_results = xgb.cv(
+            params,
+            self.dtrain,
+            num_boost_round=1000,
+            nfold=5,
+            metrics=["auc", "logloss"],
+            early_stopping_rounds=10,
+            stratified=True,
+            seed=42,
+            verbose_eval=False
+        )
+        mean_auc = cv_results['test-auc-mean'].iloc[-1]
+        std_auc = cv_results['test-auc-std'].iloc[-1]
+        mean_logloss = cv_results['test-logloss-mean'].iloc[-1]
+        std_logloss = cv_results['test-logloss-std'].iloc[-1]
+        logging.info(f"5-Fold CV Results: AUC = {mean_auc:.4f} ± {std_auc:.4f}, LogLoss = {mean_logloss:.4f} ± {std_logloss:.4f}")
+        self.cv_metrics = {
+            'cv_auc_mean': float(mean_auc),
+            'cv_auc_std': float(std_auc),
+            'cv_logloss_mean': float(mean_logloss),
+            'cv_logloss_std': float(std_logloss)
+        }
+        self.next(self.train)
+
+    @step
+    def train(self):
+        """Train XGBoost model with GPU support if available"""
+        # Convert data to DMatrix format
+        self.dval = xgb.DMatrix(self.X_test, label=self.y_test)
+
+        # Set XGBoost parameters
+        logging.info(f"Training on: {self.device}")
+        params = {
+            'objective': 'binary:logistic',
+            'eval_metric': ['auc', 'logloss'],
+            'scale_pos_weight': self.scale_pos_weight,
+            'max_depth': 6,
+            'learning_rate': 0.1,
+            'subsample': 0.8,
+            'colsample_bytree': 0.8,
+            'tree_method': 'hist',
+            'device': self.device
         }
 
-        # Train model with early stopping
+        # Train model with early stopping on full train/test split
         logging.info("🚀 Training XGBoost model...")
         self.model = xgb.train(
             params,
-            dtrain,
+            self.dtrain,
             num_boost_round=1000,
-            evals=[(dtrain, 'train'), (dval, 'val')],
+            evals=[(self.dtrain, 'train'), (self.dval, 'val')],
             early_stopping_rounds=10,
             verbose_eval=10
         )
@@ -112,7 +153,7 @@ class CreditRiskTrainingFlow(FlowSpec):
         logging.info(f"✅ Model saved to {model_path}")
 
         # Make predictions
-        y_proba = self.model.predict(dval)
+        y_proba = self.model.predict(self.dval)
         y_pred = (y_proba >= 0.5).astype(int)
 
         # Calculate metrics
@@ -154,7 +195,25 @@ class CreditRiskTrainingFlow(FlowSpec):
         plt.close()
         logging.info(f"Precision-Recall curve saved to {pr_path}")
 
+        # --- Plot and save Feature Importance ---
+        importance = self.model.get_score(importance_type='weight')
+        if importance:
+            keys = list(importance.keys())
+            values = list(importance.values())
+            plt.figure(figsize=(10,6))
+            plt.bar(keys, values)
+            plt.xticks(rotation=90)
+            plt.title('Feature Importance (by weight)')
+            plt.tight_layout()
+            fi_path = os.path.join(OUTPUT_DIR, 'feature_importance.png')
+            plt.savefig(fi_path)
+            plt.close()
+            logging.info(f"Feature importance plot saved to {fi_path}")
+        else:
+            logging.info("No feature importance data available to plot.")
+
         logging.info(f"Metrics: {self.metrics}")
+        logging.info(f"CV Metrics: {self.cv_metrics}")
         self.next(self.output)
 
     @step
@@ -170,6 +229,7 @@ class CreditRiskTrainingFlow(FlowSpec):
 
         output_path = os.path.join(OUTPUT_DIR, "metrics.json")
         params_path = os.path.join(OUTPUT_DIR, "params.json")
+        cv_metrics_path = os.path.join(OUTPUT_DIR, "cv_metrics.json")
         
         # Get the best iteration from early stopping
         params = {
@@ -183,6 +243,8 @@ class CreditRiskTrainingFlow(FlowSpec):
             json.dump(metrics, f, indent=2)
         with open(params_path, "w") as f:
             json.dump(params, f, indent=2)
+        with open(cv_metrics_path, "w") as f:
+            json.dump(self.cv_metrics, f, indent=2)
 
         logging.info(f"✅ Training complete. Metrics written to {output_path}")
         self.next(self.end)
