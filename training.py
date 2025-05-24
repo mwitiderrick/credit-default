@@ -77,8 +77,8 @@ class CreditRiskTrainingFlow(FlowSpec):
     def cross_validate(self):
         """Perform 5-fold cross-validation and log metrics."""
         import xgboost as xgb
-        self.dtrain = xgb.DMatrix(self.X_train, label=self.y_train)
-        self.device = 'cuda' if USE_GPU else 'cpu'
+        dtrain = xgb.DMatrix(self.X_train, label=self.y_train)
+        device = 'cuda' if USE_GPU else 'cpu'
         params = {
             'objective': 'binary:logistic',
             'eval_metric': ['auc', 'logloss'],
@@ -88,13 +88,13 @@ class CreditRiskTrainingFlow(FlowSpec):
             'subsample': 0.8,
             'colsample_bytree': 0.8,
             'tree_method': 'hist',
-            'device': self.device
+            'device': device
         }
         import logging
         logging.info("Starting 5-fold cross-validation with XGBoost...")
         cv_results = xgb.cv(
             params,
-            self.dtrain,
+            dtrain,
             num_boost_round=1000,
             nfold=5,
             metrics=["auc", "logloss"],
@@ -120,10 +120,11 @@ class CreditRiskTrainingFlow(FlowSpec):
     def train(self):
         """Train XGBoost model with GPU support if available"""
         # Convert data to DMatrix format
-        self.dval = xgb.DMatrix(self.X_test, label=self.y_test)
+        dtrain = xgb.DMatrix(self.X_train, label=self.y_train)
+        dval = xgb.DMatrix(self.X_test, label=self.y_test)
 
         # Set XGBoost parameters
-        logging.info(f"Training on: {self.device}")
+        logging.info(f"Training on: {device}")
         params = {
             'objective': 'binary:logistic',
             'eval_metric': ['auc', 'logloss'],
@@ -133,16 +134,16 @@ class CreditRiskTrainingFlow(FlowSpec):
             'subsample': 0.8,
             'colsample_bytree': 0.8,
             'tree_method': 'hist',
-            'device': self.device
+            'device': device
         }
 
         # Train model with early stopping on full train/test split
         logging.info("🚀 Training XGBoost model...")
         self.model = xgb.train(
             params,
-            self.dtrain,
+            dtrain,
             num_boost_round=1000,
-            evals=[(self.dtrain, 'train'), (self.dval, 'val')],
+            evals=[(dtrain, 'train'), (dval, 'val')],
             early_stopping_rounds=10,
             verbose_eval=10
         )
@@ -153,7 +154,7 @@ class CreditRiskTrainingFlow(FlowSpec):
         logging.info(f"✅ Model saved to {model_path}")
 
         # Make predictions
-        y_proba = self.model.predict(self.dval)
+        y_proba = self.model.predict(dval)
         y_pred = (y_proba >= 0.5).astype(int)
 
         # Calculate metrics
