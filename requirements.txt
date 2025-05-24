@@ -1,0 +1,13 @@
+# Core ML + Preprocessing
+xgboost==2.0.3
+scikit-learn==1.6.1
+pandas==2.2.3
+
+# Workflow and Experiment Tracking
+metaflow==2.15.14
+
+# Utilities
+requests==2.32.3
+python-dotenv== 1.1.0
+
+xlrd==2.0.1
