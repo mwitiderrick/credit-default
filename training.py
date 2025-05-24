@@ -122,8 +122,39 @@ class CreditRiskTrainingFlow(FlowSpec):
             'f1': f1_score(self.y_test, y_pred),
             'auc': roc_auc_score(self.y_test, y_proba)
         }
-        
-        logging.info(f"📊 Metrics: {self.metrics}")
+
+        # --- Plot and save ROC Curve ---
+        import matplotlib.pyplot as plt
+        from sklearn.metrics import roc_curve, precision_recall_curve, auc
+        fpr, tpr, _ = roc_curve(self.y_test, y_proba)
+        roc_auc = auc(fpr, tpr)
+        plt.figure()
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic')
+        plt.legend(loc="lower right")
+        roc_path = os.path.join(OUTPUT_DIR, 'roc_curve.png')
+        plt.savefig(roc_path)
+        plt.close()
+        logging.info(f"ROC curve saved to {roc_path}")
+
+        # --- Plot and save Precision-Recall Curve ---
+        precision, recall, _ = precision_recall_curve(self.y_test, y_proba)
+        plt.figure()
+        plt.plot(recall, precision, color='blue', lw=2)
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title('Precision-Recall Curve')
+        pr_path = os.path.join(OUTPUT_DIR, 'precision_recall_curve.png')
+        plt.savefig(pr_path)
+        plt.close()
+        logging.info(f"Precision-Recall curve saved to {pr_path}")
+
+        logging.info(f"\U0001F4CA Metrics: {self.metrics}")
         self.next(self.output)
 
     @step
