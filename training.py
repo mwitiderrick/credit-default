@@ -154,7 +154,7 @@ class CreditRiskTrainingFlow(FlowSpec):
         plt.close()
         logging.info(f"Precision-Recall curve saved to {pr_path}")
 
-        logging.info(f"\U0001F4CA Metrics: {self.metrics}")
+        logging.info(f"Metrics: {self.metrics}")
         self.next(self.output)
 
     @step
