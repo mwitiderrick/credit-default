@@ -90,8 +90,8 @@ nvidia-smi  # Should show GPU information
 ```
 
 The model will automatically:
-- Use GPU acceleration if available (`tree_method='gpu_hist'`)
-- Fall back to CPU if no GPU is detected (`tree_method='hist'`)
+- Use GPU acceleration if available 
+- Fall back to CPU if no GPU is detected 
 - Log which mode it's using during training
 
 ### 📦 Output Files
