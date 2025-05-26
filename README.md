@@ -36,9 +36,9 @@ After the model is trained and saved, you can run inference:
 ```bash
 # First, create a sample input if you haven't already
 echo '[
-    [20000, 2, 2, 1, 24, 2, 2, -1, -1, -2, -2, 
-     3913, 3102, 689, 0, 0, 0, 
-     0, 0, 0, 0, 0, 0]
+  [20000, 2, 2, 1, 24, 2, 2, -1, -1, -2, -2,
+   3913, 3102, 689, 0, 0, 0,
+   0, 0, 0, 0, 0, 0]
 ]' > sample_input.json
 
 # Then run inference

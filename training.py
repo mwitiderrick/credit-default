@@ -11,8 +11,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 import xgboost as xgb
 from metaflow import FlowSpec, step, Parameter
+import joblib 
 
-OUTPUT_DIR = os.path.join(os.getcwd(), "output") 
+OUTPUT_DIR = "/output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 logging.info(xgb.__version__)
@@ -112,6 +113,7 @@ class CreditRiskTrainingFlow(FlowSpec):
         )
 
         scaler = StandardScaler()
+        self.scaler = scaler 
         self.X_train = scaler.fit_transform(X_train)
         self.X_test = scaler.transform(X_test)
         self.y_train = y_train.values
@@ -366,6 +368,10 @@ class CreditRiskTrainingFlow(FlowSpec):
             json.dump(self.cv_metrics, f, indent=2)
 
         logging.info(f"Training complete. Metrics written to {output_path}")
+        # Save the fitted scaler
+        scaler_path = os.path.join(OUTPUT_DIR, "scaler.joblib")
+        joblib.dump(self.scaler, scaler_path)
+        logging.info(f"Scaler saved to {scaler_path}")
         self.next(self.end)
 
     @step

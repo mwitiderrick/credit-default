@@ -2,6 +2,11 @@ import pytest
 from unittest import mock
 import numpy as np
 import pandas as pd
+import os
+from unittest import mock
+
+# Patch os.makedirs BEFORE importing training
+os.makedirs = lambda *args, **kwargs: None
 
 import training
 class DummyFlow:
@@ -15,7 +20,6 @@ class DummyFlow:
         self.scale_pos_weight = None
         self.model = None
         self.metrics = None
-        self.auc_threshold = 0.75
         self.cv_metrics = {}  # Needed for .output()
         self.feature_engineering = lambda: None  # Stub for .start()
         self.cross_validate = lambda: None       # Stub for .prepare()
@@ -199,7 +203,6 @@ def test_train(monkeypatch):
 def test_output(monkeypatch, tmp_path):
     flow = DummyFlow()
     flow.metrics = {"precision": 1.0, "recall": 1.0, "f1": 1.0, "auc": 0.9}
-    flow.auc_threshold = 0.75
     flow.model = mock.Mock(best_iteration=10)
     flow.scale_pos_weight = 1.0
     # Patch OUTPUT_DIR to tmp_path
