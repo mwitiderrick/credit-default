@@ -200,6 +200,12 @@ def test_train(monkeypatch):
     assert hasattr(flow, "model")
     assert flow.metrics["auc"] == 0.9
 
+class DummyScaler:
+    def fit_transform(self, X):
+        return X
+    def transform(self, X):
+        return X
+
 def test_output(monkeypatch, tmp_path):
     flow = DummyFlow()
     flow.metrics = {"precision": 1.0, "recall": 1.0, "f1": 1.0, "auc": 0.9}
@@ -209,6 +215,8 @@ def test_output(monkeypatch, tmp_path):
     monkeypatch.setattr(training, "OUTPUT_DIR", str(tmp_path))
     monkeypatch.setattr(training, "USE_GPU", False)
     flow.next = lambda step: None
+    flow.scaler = DummyScaler()
+
     flow.output()
     # Check that metrics.json and params.json were written
     metrics_path = tmp_path / "metrics.json"

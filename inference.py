@@ -17,6 +17,9 @@ RAW_FEATURES = [
     "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6"
 ]
 
+# For compatibility with tests
+FEATURE_NAMES = RAW_FEATURES
+
 def load_model():
     """Load the saved XGBoost model."""
     if not os.path.exists(MODEL_PATH):

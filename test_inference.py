@@ -34,15 +34,17 @@ def test_predict_default_basic(monkeypatch):
     # Prepare input data
     input_data = [[1] * len(inference.FEATURE_NAMES)]
 
-    # Mock StandardScaler to just return the input unchanged
+    # DummyScaler compatible with test_training.py
     class DummyScaler:
         def fit_transform(self, X):
             return X
+        def transform(self, X):
+            return X
 
-    monkeypatch.setattr("sklearn.preprocessing.StandardScaler", lambda: DummyScaler())
-
+    # Monkeypatch joblib.load to return DummyScaler instance
+    monkeypatch.setattr("joblib.load", lambda path: DummyScaler())
     # Mock xgb.DMatrix to just return the input
-    monkeypatch.setattr("xgboost.DMatrix", lambda X: X)
+    monkeypatch.setattr("xgboost.DMatrix", lambda X, feature_names=None: X)
 
     # Use a mock model that returns fixed probabilities
     model = mock_model_predict([0.8, 0.2])
