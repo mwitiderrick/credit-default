@@ -12,7 +12,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_sco
 import xgboost as xgb
 from metaflow import FlowSpec, step, Parameter
 
-OUTPUT_DIR = "/output"
+OUTPUT_DIR = os.path.join(os.getcwd(), "output") 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 logging.info(xgb.__version__)
