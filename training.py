@@ -187,7 +187,7 @@ class CreditRiskTrainingFlow(FlowSpec):
             "objective": "binary:logistic",
             "eval_metric": ["auc", "logloss"],
             "scale_pos_weight": self.scale_pos_weight,
-            "max_depth": 12,
+            "max_depth": 6,
             "learning_rate": 0.1,
             "subsample": 0.8,
             "colsample_bytree": 0.8,
