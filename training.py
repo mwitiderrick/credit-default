@@ -60,13 +60,6 @@ class CreditRiskTrainingFlow(FlowSpec):
         """Create advanced features for credit risk prediction"""
         logging.info("Creating advanced features...")
         df = self.X
-        # Payment Behavior Features
-        pay_cols = ["PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"]
-        df["PAY_MEAN"] = df[pay_cols].mean(axis=1)
-        df["PAY_TREND"] = df["PAY_6"] - df["PAY_0"]
-        df["MAX_PAY_DELAY"] = df[pay_cols].max(axis=1)
-        df["PAY_DELAY_VOLATILITY"] = df[pay_cols].std(axis=1)
-
         # Bill and Payment Dynamics
         bill_cols = [
             "BILL_AMT1",

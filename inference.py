@@ -30,12 +30,6 @@ def load_model():
 
 def apply_feature_engineering(df):
     """Create the same engineered features as used during training."""
-    # Payment Behavior Features
-    pay_cols = ["PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"]
-    df["PAY_MEAN"] = df[pay_cols].mean(axis=1)
-    df["PAY_TREND"] = df["PAY_6"] - df["PAY_0"]
-    df["MAX_PAY_DELAY"] = df[pay_cols].max(axis=1)
-    df["PAY_DELAY_VOLATILITY"] = df[pay_cols].std(axis=1)
 
     # Bill and Payment Dynamics
     bill_cols = ["BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4", "BILL_AMT5", "BILL_AMT6"]
@@ -74,7 +68,7 @@ def predict_default(model, input_data):
     # Scale using standard scaler (fitted during training - ideally, load it)
     scaler = joblib.load(SCALER_PATH)
 
-    input_scaled = scaler.fit_transform(df)  # In production, load the fitted scaler
+    input_scaled = scaler.transform(df)  # In production, load the fitted scaler
 
     # Use same column names as training
     dtest = xgb.DMatrix(input_scaled, feature_names=df.columns.tolist())
